@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renombrador de Imágenes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --error: #f72585;
+            --light: #f8f9fa;
+            --dark: #212529;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            background: #f5f7ff;
+            padding: 2rem;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 2rem;
+        }
+        h1 {
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .step {
+            display: none;
+            padding: 1.5rem;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .step.active {
+            display: block;
+        }
+        #fileList {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 1rem 0;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+        .file-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        .progress-bar {
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            background: var(--success);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .success-box {
+            background: #e8f5e9;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+            color: #2e7d32;
+        }
+        .error-box {
+            background: #ffebee;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+            color: #c62828;
+        }
+        .success-box i, .error-box i {
+            margin-right: 0.5rem;
+        }
+        #folderInfo {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        #excelPreview {
+            margin: 1rem 0;
+        }
+        .file-input {
+            display: none;
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .step-number {
+            background: var(--primary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-images"></i> Renombrador de Imágenes</h1>
+        
+        <div class="step active" id="step1">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <h2>Seleccionar Carpeta</h2>
+            </div>
+            <button id="selectFolder" class="btn">
+                <i class="fas fa-folder-open"></i> Elegir Carpeta con Imágenes
+            </button>
+            <div id="folderInfo"></div>
+        </div>
+
+        <div class="step" id="step2">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <h2>Vista Previa</h2>
+            </div>
+            <div id="fileList">
+                <p>No se han cargado archivos aún.</p>
+            </div>
+            <button id="generateExcel" class="btn" disabled>
+                <i class="fas fa-file-excel"></i> Generar Excel
+            </button>
+        </div>
+
+        <div class="step" id="step3">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <h2>Cargar Cambios</h2>
+            </div>
+            <p>Edita el Excel (columna "nuevoNombre") y súbelo aquí:</p>
+            <button id="uploadExcel" class="btn">
+                <i class="fas fa-upload"></i> Subir Excel Modificado
+            </button>
+            <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls">
+            <div id="excelPreview"></div>
+        </div>
+
+        <div class="step" id="step4">
+            <div class="step-header">
+                <div class="step-number">4</div>
+                <h2>Procesar</h2>
+            </div>
+            <button id="process" class="btn" disabled>
+                <i class="fas fa-cogs"></i> Generar Archivos Renombrados
+            </button>
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        // Variables globales
+        let imageFiles = [];
+        let folderHandle;
+        let excelData = [];
+
+        // Elementos del DOM
+        const selectFolderBtn = document.getElementById('selectFolder');
+        const generateExcelBtn = document.getElementById('generateExcel');
+        const uploadExcelBtn = document.getElementById('uploadExcel');
+        const excelFileInput = document.getElementById('excelFile');
+        const processBtn = document.getElementById('process');
+        const fileList = document.getElementById('fileList');
+        const excelPreview = document.getElementById('excelPreview');
+        const resultDiv = document.getElementById('result');
+        const progressBar = document.getElementById('progress');
+        const steps = document.querySelectorAll('.step');
+        const folderInfo = document.getElementById('folderInfo');
+
+        // Event Listeners
+        selectFolderBtn.addEventListener('click', selectFolder);
+        generateExcelBtn.addEventListener('click', generateExcel);
+        uploadExcelBtn.addEventListener('click', () => excelFileInput.click());
+        excelFileInput.addEventListener('change', handleExcelUpload);
+        processBtn.addEventListener('click', processFiles);
+
+        // 1. Seleccionar carpeta
+        async function selectFolder() {
+            try {
+                // Resetear estado anterior
+                imageFiles = [];
+                folderHandle = null;
+                excelData = [];
+                fileList.innerHTML = '<p>No se han cargado archivos aún.</p>';
+                excelPreview.innerHTML = '';
+                resultDiv.innerHTML = '';
+                progressBar.style.width = '0%';
+                
+                // Usar la API moderna de selección de directorios
+                folderHandle = await window.showDirectoryPicker();
+                imageFiles = await getImageFiles(folderHandle);
+                
+                // Mostrar información
+                folderInfo.innerHTML = `
+                    <p><strong>Carpeta seleccionada:</strong> ${folderHandle.name}</p>
+                    <p><strong>Archivos encontrados:</strong> ${imageFiles.length}</p>
+                    ${imageFiles.length === 0 ? '<p style="color: var(--error)">No se encontraron imágenes válidas (soportamos .jpg, .jpeg, .png, .gif, .bmp, .webp)</p>' : ''}
+                `;
+                
+                // Mostrar vista previa
+                showFilePreview();
+                goToStep(2);
+                generateExcelBtn.disabled = imageFiles.length === 0;
+            } catch (error) {
+                console.error("Error al seleccionar carpeta:", error);
+                if (error.name !== 'AbortError') {
+                    showError("Error al seleccionar carpeta", error.message);
+                }
+            }
+        }
+
+        // Obtener imágenes recursivamente
+        async function getImageFiles(dirHandle) {
+            const files = [];
+            const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+            
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file') {
+                    const fileName = entry.name;
+                    const lastDotIndex = fileName.lastIndexOf('.');
+                    
+                    // Manejar archivos sin extensión
+                    if (lastDotIndex === -1) continue;
+                    
+                    const extension = fileName.slice(lastDotIndex).toLowerCase();
+                    if (allowedExtensions.includes(extension)) {
+                        files.push({
+                            name: fileName,
+                            handle: entry,
+                            extension: extension
+                        });
+                    }
+                } else if (entry.kind === 'directory') {
+                    const subFiles = await getImageFiles(entry);
+                    files.push(...subFiles);
+                }
+            }
+            
+            return files;
+        }
+
+        // Mostrar vista previa de archivos
+        function showFilePreview() {
+            if (imageFiles.length === 0) {
+                fileList.innerHTML = '<p>No se encontraron imágenes válidas.</p>';
+                return;
+            }
+            
+            let html = '';
+            imageFiles.slice(0, 50).forEach(file => {
+                html += `<div class="file-item">${file.name}</div>`;
+            });
+            
+            if (imageFiles.length > 50) {
+                html += `<div class="file-item">... y ${imageFiles.length - 50} más</div>`;
+            }
+            
+            fileList.innerHTML = html;
+        }
+
+        // 2. Generar Excel
+        function generateExcel() {
+            excelData = imageFiles.map(file => ({
+                nombreActual: file.name,
+                nuevoNombre: '',
+                extension: file.extension
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Imágenes");
+            
+            // Añadir instrucciones como segunda hoja
+            const instructions = [
+                ["INSTRUCCIONES"],
+                ["1. Edita la columna 'nuevoNombre' con los nombres que deseas asignar"],
+                ["2. No modifiques la columna 'nombreActual'"],
+                ["3. No incluyas la extensión en 'nuevoNombre' (se agregará automáticamente)"],
+                ["4. No dejes nombres vacíos si no quieres cambiar ese archivo"],
+                ["5. Asegúrate de que no haya nombres duplicados"],
+                ["6. Guarda el archivo y súbelo en el paso 3"]
+            ];
+            const instructionWs = XLSX.utils.aoa_to_sheet(instructions);
+            XLSX.utils.book_append_sheet(wb, instructionWs, "Instrucciones");
+            
+            const date = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `nombres_imagenes_${date}.xlsx`);
+            goToStep(3);
+        }
+
+        // 3. Manejar Excel subido
+        function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    excelData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    // Validar formato
+                    if (!excelData[0]?.nombreActual) {
+                        showError("Formato incorrecto", "El Excel debe contener al menos la columna 'nombreActual'");
+                        return;
+                    }
+                    
+                    // Asegurar que exista columna nuevoNombre
+                    if (!excelData[0].hasOwnProperty('nuevoNombre')) {
+                        excelData = excelData.map(item => ({ 
+                            ...item, 
+                            nuevoNombre: '',
+                            extension: item.nombreActual.split('.').pop()
+                        }));
+                    }
+                    
+                    // Mostrar vista previa
+                    showExcelPreview();
+                    processBtn.disabled = false;
+                    goToStep(4);
+                } catch (error) {
+                    console.error("Error al procesar Excel:", error);
+                    showError("Error al procesar Excel", "El archivo no es un Excel válido o está corrupto");
+                }
+            };
+            reader.onerror = function() {
+                showError("Error de lectura", "No se pudo leer el archivo Excel");
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function showExcelPreview() {
+            const changes = excelData.filter(item => item.nuevoNombre && item.nuevoNombre.trim() !== '');
+            let html = `
+                <p><strong>Cambios a realizar:</strong> ${changes.length} de ${excelData.length} archivos</p>
+                <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 1rem; margin: 1rem 0;">
+            `;
+            
+            changes.slice(0, 20).forEach(item => {
+                const extension = item.nombreActual.split('.').pop();
+                const newName = item.nuevoNombre.endsWith(`.${extension}`) 
+                    ? item.nuevoNombre 
+                    : `${item.nuevoNombre}.${extension}`;
+                
+                html += `<div style="padding: 0.3rem; border-bottom: 1px solid #eee;">
+                    ${item.nombreActual} → <strong style="color: var(--primary)">${newName}</strong>
+                </div>`;
+            });
+            
+            if (changes.length > 20) {
+                html += `<div style="padding: 0.3rem;">... y ${changes.length - 20} más</div>`;
+            }
+            
+            html += `</div>`;
+            
+            // Verificación de nombres duplicados
+            const newNames = changes.map(item => {
+                const ext = item.nombreActual.split('.').pop();
+                return item.nuevoNombre.endsWith(`.${ext}`) 
+                    ? item.nuevoNombre 
+                    : `${item.nuevoNombre}.${ext}`;
+            });
+            
+            const duplicates = findDuplicates(newNames);
+            if (duplicates.length) {
+                html += `<div style="color: var(--error); margin-top: 1rem;">
+                    <i class="fas fa-exclamation-triangle"></i> Advertencia: Hay ${duplicates.length} nombres duplicados
+                </div>`;
+            }
+            
+            excelPreview.innerHTML = html;
+        }
+
+        // 4. Procesar archivos
+
+        // 4. Procesar archivos
+async function processFiles() {
+    if (!excelData.length) {
+        showError("Error", "No hay datos para procesar");
+        return;
+    }
+    
+    const changes = excelData.filter(item => item.nuevoNombre && item.nuevoNombre.trim() !== '');
+    if (!changes.length) {
+        showError("Error", "No hay nombres nuevos asignados en el Excel");
+        return;
+    }
+    
+    // Verificar duplicados
+    const newNames = changes.map(item => {
+        const ext = item.extension || item.nombreActual.split('.').pop();
+        return item.nuevoNombre.endsWith(`.${ext}`) 
+            ? item.nuevoNombre 
+            : `${item.nuevoNombre}.${ext}`;
+    });
+    
+    const duplicates = findDuplicates(newNames);
+    if (duplicates.length) {
+        showError("Nombres duplicados", `Los siguientes nombres aparecen más de una vez: ${duplicates.slice(0, 5).join(', ')}${duplicates.length > 5 ? '...' : ''}`);
+        return;
+    }
+    
+    try {
+        const zip = new JSZip();
+        let processed = 0;
+        let skipped = 0;
+        const errors = [];
+        
+        // Procesar solo los archivos con cambios
+        for (const item of changes) {
+            try {
+                const originalFile = imageFiles.find(f => f.name === item.nombreActual);
+                if (!originalFile) {
+                    skipped++;
+                    errors.push(`No se encontró el archivo original: ${item.nombreActual}`);
+                    continue;
+                }
+                
+                const file = await originalFile.handle.getFile();
+                const extension = item.extension || item.nombreActual.split('.').pop();
+                
+                // Generar nombre final - SIN interpretar las barras como carpetas
+                let finalName = item.nuevoNombre.trim();
+                
+                // Asegurar que tenga la extensión correcta
+                if (!finalName.toLowerCase().endsWith(`.${extension}`)) {
+                    finalName += `.${extension}`;
+                }
+                
+                // Reemplazar cualquier barra diagonal por otro carácter si lo deseas
+                // finalName = finalName.replace(/\//g, '-');
+                // O simplemente mantenerlas como parte del nombre
+                
+                // Agregar al ZIP en la raíz con el nombre exacto
+                zip.file(finalName, file);
+                
+                processed++;
+                progressBar.style.width = `${(processed / changes.length) * 100}%`;
+            } catch (error) {
+                errors.push(`Error al procesar ${item.nombreActual}: ${error.message}`);
+                skipped++;
+            }
+        }
+        
+        if (processed === 0) {
+            showError("Error", "No se encontraron archivos para renombrar. Verifica que los nombres en el Excel coincidan con los archivos originales.");
+            return;
+        }
+        
+        // Generar ZIP
+        const content = await zip.generateAsync({ type: 'blob' }, metadata => {
+            console.log(`Progreso: ${metadata.percent.toFixed(2)}%`);
+        });
+        
+        // Descargar
+        const url = URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `imagenes_renombradas_${new Date().toISOString().split('T')[0]}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 100);
+        
+        // Mostrar resultado
+        let resultMessage = `
+            <div class="success-box">
+                <i class="fas fa-check-circle"></i>
+                <p><strong>¡Proceso completado!</strong></p>
+                <p>Archivos procesados: ${processed}</p>
+                ${skipped > 0 ? `<p>Archivos no procesados: ${skipped}</p>` : ''}
+                <p>Se ha creado un archivo ZIP con las imágenes renombradas.</p>
+                <p><strong>Nota:</strong> Las barras "/" en los nombres se han mantenido como parte del nombre del archivo.</p>
+        `;
+        
+        if (errors.length > 0) {
+            resultMessage += `
+                <div style="margin-top: 1rem; max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 0.5rem;">
+                    <p><strong>Errores (${errors.length}):</strong></p>
+                    ${errors.slice(0, 5).map(e => `<p style="color: var(--error); font-size: 0.9rem;">${e}</p>`).join('')}
+                    ${errors.length > 5 ? `<p>... y ${errors.length - 5} más</p>` : ''}
+                </div>
+            `;
+        }
+        
+        resultMessage += `</div>`;
+        resultDiv.innerHTML = resultMessage;
+        
+    } catch (error) {
+        console.error("Error:", error);
+        showError("Error al procesar", error.message);
+    }
+}
+     
+
+        // Helper: Encontrar duplicados
+        function findDuplicates(arr) {
+            const seen = {};
+            const duplicates = [];
+            
+            arr.forEach(item => {
+                if (seen[item]) {
+                    if (seen[item] === 1) {
+                        duplicates.push(item);
+                    }
+                    seen[item]++;
+                } else {
+                    seen[item] = 1;
+                }
+            });
+            
+            return duplicates;
+        }
+
+        // Mostrar mensaje de éxito
+        function showSuccess(message) {
+            resultDiv.innerHTML = `
+                <div class="success-box">
+                    <i class="fas fa-check-circle"></i>
+                    ${message}
+                </div>
+            `;
+        }
+
+        // Mostrar mensaje de error
+        function showError(title, message) {
+            resultDiv.innerHTML = `
+                <div class="error-box">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <strong>${title}:</strong> ${message}
+                </div>
+            `;
+        }
+
+        // Navegación entre pasos
+        function goToStep(stepNumber) {
+            steps.forEach((step, index) => {
+                step.classList.toggle('active', index === stepNumber - 1);
+            });
+        }
+    </script>
+</body>
+</html>
