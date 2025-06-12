@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renombrador Avanzado de Imágenes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<style>
+    :root {
+        --primary: #4361ee;
+        --secondary: #3f37c9;
+        --success: #4cc9f0;
+        --error: #f72585;
+        --warning: #f8961e;
+        --light: #f8f9fa;
+        --dark: #212529;
+    }
+    
+    body {
+        font-family: 'Roboto', sans-serif;
+        line-height: 1.6;
+        background: #f5f7ff;
+        padding: 2rem;
+        margin: 0;
+        color: #333;
+    }
+    
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        padding: 2rem;
+    }
+    
+    h1, h2, h3, h4 {
+        color: var(--primary);
+        margin-top: 0;
+    }
+    
+    h1 {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn:hover {
+        background: var(--secondary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .step {
+        display: none;
+        padding: 1.5rem;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+        background: #fff;
+    }
+    
+    .step.active {
+        display: block;
+        animation: fadeIn 0.5s ease;
+    }
+    
+    #fileList {
+        max-height: 300px;
+        overflow-y: auto;
+        margin: 1rem 0;
+        border: 1px solid #ddd;
+        padding: 1rem;
+        border-radius: 5px;
+        background: #fafafa;
+    }
+    
+    .file-item {
+        padding: 0.5rem;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        font-family: monospace;
+    }
+    
+    .progress-bar {
+        height: 10px;
+        background: #eee;
+        border-radius: 5px;
+        margin: 1.5rem 0;
+        overflow: hidden;
+    }
+    
+    .progress {
+        height: 100%;
+        background: var(--success);
+        width: 0%;
+        transition: width 0.3s;
+    }
+    
+    .success-box {
+        background: #e8f5e9;
+        padding: 1rem;
+        border-radius: 5px;
+        margin-top: 1rem;
+        color: #2e7d32;
+        border-left: 4px solid #4caf50;
+    }
+    
+    .error-box {
+        background: #ffebee;
+        padding: 1rem;
+        border-radius: 5px;
+        margin-top: 1rem;
+        color: #c62828;
+        border-left: 4px solid #f44336;
+    }
+    
+    .warning-box {
+        background: #fff3e0;
+        padding: 1rem;
+        border-radius: 5px;
+        margin-top: 1rem;
+        color: #e65100;
+        border-left: 4px solid var(--warning);
+    }
+    
+    .success-box i, .error-box i, .warning-box i {
+        margin-right: 0.5rem;
+    }
+    
+    #folderInfo {
+        margin: 1rem 0;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 5px;
+        border-left: 4px solid var(--primary);
+    }
+    
+    #excelPreview {
+        margin: 1rem 0;
+    }
+    
+    .file-input {
+        display: none;
+    }
+    
+    .step-header {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .step-number {
+        background: var(--primary);
+        color: white;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-weight: bold;
+    }
+    
+    .options-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin: 1.5rem 0;
+    }
+    
+    .option-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1.5rem;
+        transition: all 0.3s;
+        background: #fff;
+    }
+    
+    .option-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .option-card h4 {
+        margin-top: 0;
+        color: var(--secondary);
+    }
+    
+    .auto-options {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.8rem;
+        align-items: center;
+        margin: 1rem 0;
+    }
+    
+    .auto-options input {
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    .download-options {
+        margin: 1rem 0;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 5px;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @media (max-width: 768px) {
+        body {
+            padding: 1rem;
+        }
+        
+        .container {
+            padding: 1rem;
+        }
+        
+        .options-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<style>
+    /* Estilos adicionales para mejor visualización */
+    .file-list-header {
+        display: flex;
+        justify-content: space-between;
+        font-weight: bold;
+        padding: 0.5rem;
+        background: #f0f0f0;
+        margin-bottom: 0.5rem;
+    }
+    
+    .file-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem;
+        border-bottom: 1px solid #eee;
+        font-family: monospace;
+    }
+    
+    .file-path {
+        color: #666;
+        font-size: 0.9em;
+    }
+    
+    .preview-container {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 1rem;
+        margin: 1rem 0;
+        background: #fafafa;
+    }
+    
+    .preview-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        border-bottom: 1px solid #eee;
+        gap: 1rem;
+    }
+    
+    .preview-item .original, 
+    .preview-item .new {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .preview-item .path {
+        font-size: 0.8em;
+        color: #666;
+    }
+    
+    .preview-item .name {
+        font-weight: 500;
+    }
+    
+    .preview-item .new-name {
+        color: var(--primary);
+    }
+    
+    .preview-item .arrow {
+        color: #999;
+    }
+    
+    .preview-more {
+        padding: 0.5rem;
+        text-align: center;
+        color: #666;
+    }
+    
+    .error-details {
+        margin-top: 1rem;
+        padding: 0.5rem;
+        background: rgba(255,0,0,0.05);
+        border-radius: 4px;
+    }
+    
+    .error-list {
+        max-height: 100px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+    
+    /* Estilos para el loading */
+    .fa-spinner {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<body>
+    <div class="container">
+        <h1><i class="fas fa-images"></i> Renombrador Avanzado de Imágenes</h1>
+        
+        <!-- Paso 1: Selección de carpeta -->
+        <div class="step active" id="step1">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <h2>Seleccionar Carpeta</h2>
+            </div>
+            <button id="selectFolder" class="btn">
+                <i class="fas fa-folder-open"></i> Elegir Carpeta con Imágenes
+            </button>
+            <div id="folderInfo"></div>
+        </div>
+
+        <!-- Paso 2: Opciones de renombrado -->
+        <div class="step" id="step2">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <h2>Opciones de Renombrado</h2>
+            </div>
+            <div id="fileList">
+                <p>No se han cargado archivos aún.</p>
+            </div>
+            
+            <div class="options-container">
+                <h3>Elige cómo quieres renombrar:</h3>
+                
+                <div class="option-card" id="optionTemplate">
+                    <h4><i class="fas fa-file-excel"></i> Plantilla Personalizada</h4>
+                    <p>Descarga un Excel para editar los nombres individualmente</p>
+                    <button id="generateCustomTemplate" class="btn">
+                        <i class="fas fa-download"></i> Descargar Plantilla
+                    </button>
+                </div>
+                
+                <div class="option-card" id="optionAuto">
+                    <h4><i class="fas fa-magic"></i> Renombrado Automático</h4>
+                    <p>Genera nombres secuenciales automáticamente</p>
+                    <div class="auto-options">
+                        <label for="prefix">Prefijo:</label>
+                        <input type="text" id="prefix" placeholder="img_">
+                        <label for="startNumber">Número inicial:</label>
+                        <input type="number" id="startNumber" value="1" min="1">
+                    </div>
+                    <button id="generateAutoTemplate" class="btn">
+                        <i class="fas fa-download"></i> Generar Plantilla Automática
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paso 3: Cargar Excel modificado -->
+        <div class="step" id="step3">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <h2>Cargar Cambios</h2>
+            </div>
+            <p>Edita el Excel (columna "nuevoNombre") y súbelo aquí:</p>
+            <button id="uploadExcel" class="btn">
+                <i class="fas fa-upload"></i> Subir Excel Modificado
+            </button>
+            <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls">
+            <div id="excelPreview"></div>
+        </div>
+
+        <!-- Paso 4: Procesar y descargar -->
+        <div class="step" id="step4">
+            <div class="step-header">
+                <div class="step-number">4</div>
+                <h2>Procesar y Descargar</h2>
+            </div>
+            <div class="download-options">
+                <label>
+                    <input type="checkbox" id="flattenStructure" checked>
+                    Aplanar estructura de carpetas (todas las imágenes en una sola carpeta)
+                </label>
+            </div>
+            <button id="process" class="btn" disabled>
+                <i class="fas fa-cogs"></i> Generar Archivos Renombrados
+            </button>
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script>
+    // Variables globales
+    let imageFiles = [];
+    let folderHandle;
+    let excelData = [];
+    let folderStructure = {};
+
+    // Elementos del DOM
+    const selectFolderBtn = document.getElementById('selectFolder');
+    const generateCustomTemplateBtn = document.getElementById('generateCustomTemplate');
+    const generateAutoTemplateBtn = document.getElementById('generateAutoTemplate');
+    const uploadExcelBtn = document.getElementById('uploadExcel');
+    const excelFileInput = document.getElementById('excelFile');
+    const processBtn = document.getElementById('process');
+    const fileList = document.getElementById('fileList');
+    const excelPreview = document.getElementById('excelPreview');
+    const resultDiv = document.getElementById('result');
+    const progressBar = document.getElementById('progress');
+    const steps = document.querySelectorAll('.step');
+    const folderInfo = document.getElementById('folderInfo');
+    const flattenStructureCheckbox = document.getElementById('flattenStructure');
+    const prefixInput = document.getElementById('prefix');
+    const startNumberInput = document.getElementById('startNumber');
+
+    // Event Listeners
+    selectFolderBtn.addEventListener('click', selectFolder);
+    generateCustomTemplateBtn.addEventListener('click', generateCustomTemplate);
+    generateAutoTemplateBtn.addEventListener('click', generateAutoTemplate);
+    uploadExcelBtn.addEventListener('click', () => excelFileInput.click());
+    excelFileInput.addEventListener('change', handleExcelUpload);
+    processBtn.addEventListener('click', processFiles);
+</script>
+<script>
+    // 1. Seleccionar carpeta
+    async function selectFolder() {
+        try {
+            // Resetear estado anterior
+            resetState();
+            
+            // Usar la API de selección de directorios
+            folderHandle = await window.showDirectoryPicker();
+            const { files, structure } = await getImageFiles(folderHandle);
+            imageFiles = files;
+            folderStructure = structure;
+            
+            // Mostrar información
+            showFolderInfo();
+            
+            // Mostrar vista previa
+            showFilePreview();
+            
+            // Habilitar siguiente paso
+            goToStep(2);
+            
+        } catch (error) {
+            console.error("Error al seleccionar carpeta:", error);
+            if (error.name !== 'AbortError') {
+                showError("Error al seleccionar carpeta", error.message);
+            }
+        }
+    }
+
+    // Obtener imágenes recursivamente y estructura de carpetas
+    async function getImageFiles(dirHandle, path = '') {
+        const files = [];
+        const structure = {};
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+        
+        for await (const entry of dirHandle.values()) {
+            const entryPath = path ? `${path}/${entry.name}` : entry.name;
+            
+            if (entry.kind === 'file') {
+                const fileName = entry.name;
+                const lastDotIndex = fileName.lastIndexOf('.');
+                
+                if (lastDotIndex === -1) continue; // Saltar archivos sin extensión
+                
+                const extension = fileName.slice(lastDotIndex).toLowerCase();
+                if (allowedExtensions.includes(extension)) {
+                    files.push({
+                        name: fileName,
+                        path: entryPath,
+                        handle: entry,
+                        extension: extension,
+                        originalPath: path // Guardamos la ruta original para opción de aplanar
+                    });
+                }
+            } else if (entry.kind === 'directory') {
+                const { files: subFiles, structure: subStructure } = await getImageFiles(entry, entryPath);
+                files.push(...subFiles);
+                structure[entry.name] = subStructure;
+            }
+        }
+        
+        return { files, structure };
+    }
+
+    function showFolderInfo() {
+        const fileCount = imageFiles.length;
+        const folderCount = countFolders(folderStructure);
+        
+        folderInfo.innerHTML = `
+            <p><strong>Carpeta seleccionada:</strong> ${folderHandle.name}</p>
+            <p><strong>Archivos encontrados:</strong> ${fileCount}</p>
+            <p><strong>Subcarpetas:</strong> ${folderCount}</p>
+            ${fileCount === 0 ? 
+                '<p class="warning-box"><i class="fas fa-exclamation-triangle"></i> No se encontraron imágenes válidas (soportamos .jpg, .jpeg, .png, .gif, .bmp, .webp)</p>' : ''}
+        `;
+    }
+
+    function countFolders(structure) {
+        let count = 0;
+        for (const key in structure) {
+            count += 1 + countFolders(structure[key]);
+        }
+        return count;
+    }
+
+    function resetState() {
+        imageFiles = [];
+        folderHandle = null;
+        excelData = [];
+        folderStructure = {};
+        fileList.innerHTML = '<p>No se han cargado archivos aún.</p>';
+        excelPreview.innerHTML = '';
+        resultDiv.innerHTML = '';
+        progressBar.style.width = '0%';
+        processBtn.disabled = true;
+    }
+</script>
+
+<script>
+    // Mostrar vista previa de archivos
+    function showFilePreview() {
+        if (imageFiles.length === 0) {
+            fileList.innerHTML = '<p>No se encontraron imágenes válidas.</p>';
+            return;
+        }
+        
+        let html = '<div class="file-list-header"><span>Nombre del archivo</span><span>Ruta</span></div>';
+        
+        imageFiles.slice(0, 50).forEach(file => {
+            html += `
+                <div class="file-item">
+                    <span>${file.name}</span>
+                    <span class="file-path">${file.path.replace(file.name, '')}</span>
+                </div>
+            `;
+        });
+        
+        if (imageFiles.length > 50) {
+            html += `<div class="file-item">... y ${imageFiles.length - 50} archivos más</div>`;
+        }
+        
+        fileList.innerHTML = html;
+    }
+</script>
+
+<script>
+    // 2. Generar plantillas
+    function generateCustomTemplate() {
+        excelData = imageFiles.map(file => ({
+            nombreActual: file.path,
+            nuevoNombre: '',
+            extension: file.extension,
+            rutaOriginal: file.path.replace(file.name, '')
+        }));
+        
+        generateExcelFile('personalizada');
+        goToStep(3);
+    }
+
+    function generateAutoTemplate() {
+        const prefix = prefixInput.value || 'img_';
+        let counter = parseInt(startNumberInput.value) || 1;
+        
+        excelData = imageFiles.map(file => {
+            const newName = `${prefix}${counter++}`;
+            return {
+                nombreActual: file.path,
+                nuevoNombre: newName,
+                extension: file.extension,
+                rutaOriginal: file.path.replace(file.name, '')
+            };
+        });
+        
+        generateExcelFile('automatica');
+        goToStep(3);
+    }
+
+    function generateExcelFile(tipo) {
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Imágenes");
+        
+        // Hoja de instrucciones
+        const instructions = [
+            ["INSTRUCCIONES"],
+            ["1. Edita SOLO la columna 'nuevoNombre' con los nombres que deseas asignar"],
+            ["2. No modifiques las otras columnas (nombreActual, extension, rutaOriginal)"],
+            ["3. No incluyas la extensión en 'nuevoNombre' (se agregará automáticamente)"],
+            ["4. Si dejas un nombre vacío, el archivo no se renombrará"],
+            ["5. Asegúrate de que no haya nombres duplicados"],
+            ["6. Puedes mantener la estructura de carpetas o aplanarla (todas en una)"],
+            ["7. Guarda el archivo y súbelo en el paso 3"]
+        ];
+        const instructionWs = XLSX.utils.aoa_to_sheet(instructions);
+        XLSX.utils.book_append_sheet(wb, instructionWs, "Instrucciones");
+        
+        const date = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(wb, `nombres_imagenes_${tipo}_${date}.xlsx`);
+    }
+</script>
+
+
+<script>
+    // 3. Manejar Excel subido
+    function handleExcelUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                excelData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                // Validar formato básico
+                if (!excelData[0]?.nombreActual) {
+                    showError("Formato incorrecto", "El Excel debe contener al menos la columna 'nombreActual'");
+                    return;
+                }
+                
+                // Procesar datos del Excel
+                processExcelData();
+                
+                // Mostrar vista previa
+                showExcelPreview();
+                
+                // Habilitar procesamiento
+                processBtn.disabled = false;
+                goToStep(4);
+                
+            } catch (error) {
+                console.error("Error al procesar Excel:", error);
+                showError("Error al procesar Excel", "El archivo no es un Excel válido o está corrupto");
+            }
+        };
+        reader.onerror = function() {
+            showError("Error de lectura", "No se pudo leer el archivo Excel");
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function processExcelData() {
+        // Asegurar que tenemos los campos necesarios
+        excelData = excelData.map(item => {
+            // Si viene de un Excel antiguo sin rutaOriginal, usar el path del nombreActual
+            const originalPath = item.rutaOriginal || 
+                               (item.nombreActual.includes('/') ? 
+                                item.nombreActual.substring(0, item.nombreActual.lastIndexOf('/') + 1) : '');
+            
+            return {
+                nombreActual: item.nombreActual,
+                nuevoNombre: item.nuevoNombre || '',
+                extension: item.extension || item.nombreActual.split('.').pop(),
+                rutaOriginal: originalPath
+            };
+        });
+    }
+
+    function showExcelPreview() {
+        const changes = excelData.filter(item => item.nuevoNombre && item.nuevoNombre.trim() !== '');
+        let html = `
+            <p><strong>Cambios a realizar:</strong> ${changes.length} de ${excelData.length} archivos</p>
+            <div class="preview-container">
+        `;
+        
+        changes.slice(0, 20).forEach(item => {
+            const newNameWithExt = item.nuevoNombre.endsWith(`.${item.extension}`) 
+                ? item.nuevoNombre 
+                : `${item.nuevoNombre}.${item.extension}`;
+            
+            const originalPath = item.nombreActual.includes('/') ? 
+                item.nombreActual.substring(0, item.nombreActual.lastIndexOf('/') + 1) : '';
+            
+            html += `
+                <div class="preview-item">
+                    <div class="original">
+                        <span class="path">${originalPath}</span>
+                        <span class="name">${item.nombreActual.split('/').pop()}</span>
+                    </div>
+                    <div class="arrow">→</div>
+                    <div class="new">
+                        <span class="path">${flattenStructureCheckbox.checked ? '' : originalPath}</span>
+                        <span class="name new-name">${newNameWithExt}</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        if (changes.length > 20) {
+            html += `<div class="preview-more">... y ${changes.length - 20} cambios más</div>`;
+        }
+        
+        html += `</div>`;
+        
+        // Verificación de nombres duplicados
+        const newNames = changes.map(item => {
+            return item.nuevoNombre.endsWith(`.${item.extension}`) 
+                ? item.nuevoNombre 
+                : `${item.nuevoNombre}.${item.extension}`;
+        });
+        
+        const duplicates = findDuplicates(newNames);
+        if (duplicates.length) {
+            html += `
+                <div class="warning-box">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    <strong>Advertencia:</strong> Hay ${duplicates.length} nombres duplicados. 
+                    Los archivos con nombres duplicados no se procesarán.
+                    ${duplicates.slice(0, 3).map(name => `<div>${name}</div>`).join('')}
+                    ${duplicates.length > 3 ? `<div>...</div>` : ''}
+                </div>
+            `;
+        }
+        
+        excelPreview.innerHTML = html;
+    }
+</script>
+
+<script>
+    // 4. Procesar archivos y generar ZIP
+    async function processFiles() {
+        if (!excelData.length) {
+            showError("Error", "No hay datos para procesar");
+            return;
+        }
+        
+        const changes = excelData.filter(item => item.nuevoNombre && item.nuevoNombre.trim() !== '');
+        if (!changes.length) {
+            showError("Error", "No hay nombres nuevos asignados en el Excel");
+            return;
+        }
+        
+        // Verificar duplicados
+        const newNames = changes.map(item => {
+            return item.nuevoNombre.endsWith(`.${item.extension}`) 
+                ? item.nuevoNombre 
+                : `${item.nuevoNombre}.${item.extension}`;
+        });
+        
+        const duplicates = findDuplicates(newNames);
+        if (duplicates.length) {
+            showError("Nombres duplicados", `Hay ${duplicates.length} nombres duplicados. Corrige el Excel y vuelve a subirlo.`);
+            return;
+        }
+        
+        try {
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+            
+            const zip = new JSZip();
+            let processed = 0;
+            let skipped = 0;
+            const errors = [];
+            const flatten = flattenStructureCheckbox.checked;
+            
+            // Procesar solo los archivos con cambios
+            for (const item of changes) {
+                try {
+                    const originalFile = imageFiles.find(f => f.path === item.nombreActual);
+                    if (!originalFile) {
+                        skipped++;
+                        errors.push(`No se encontró el archivo original: ${item.nombreActual}`);
+                        continue;
+                    }
+                    
+                    const file = await originalFile.handle.getFile();
+                    const extension = item.extension;
+                    
+                    // Generar nombre final
+                    let finalName = item.nuevoNombre.trim();
+                    
+                    // Asegurar extensión
+                    if (!finalName.toLowerCase().endsWith(`.${extension}`)) {
+                        finalName += `.${extension}`;
+                    }
+                    
+                    // Sanitizar nombre (reemplazar caracteres problemáticos)
+                    finalName = sanitizeFilename(finalName);
+                    
+                    // Determinar ruta en el ZIP
+                    let zipPath = finalName;
+                    if (!flatten) {
+                        // Mantener estructura original
+                        const originalPath = item.rutaOriginal || '';
+                        zipPath = originalPath + finalName;
+                    }
+                    
+                    // Agregar al ZIP
+                    zip.file(zipPath, file);
+                    
+                    processed++;
+                    updateProgress(processed, changes.length);
+                    
+                } catch (error) {
+                    errors.push(`Error al procesar ${item.nombreActual}: ${error.message}`);
+                    skipped++;
+                }
+            }
+            
+            if (processed === 0) {
+                showError("Error", "No se pudo procesar ningún archivo. Verifica que los nombres en el Excel coincidan con los archivos originales.");
+                return;
+            }
+            
+            // Generar ZIP
+            const zipFilename = `imagenes_renombradas_${new Date().toISOString().split('T')[0]}.zip`;
+            const content = await zip.generateAsync({ type: 'blob' }, metadata => {
+                console.log(`Progreso ZIP: ${metadata.percent.toFixed(2)}%`);
+            });
+            
+            // Descargar ZIP
+            saveAs(content, zipFilename);
+            
+            // Mostrar resultado
+            showResult(processed, skipped, errors, flatten);
+            
+        } catch (error) {
+            console.error("Error:", error);
+            showError("Error al procesar", error.message);
+        } finally {
+            processBtn.disabled = false;
+            processBtn.innerHTML = '<i class="fas fa-cogs"></i> Generar Archivos Renombrados';
+        }
+    }
+
+    function updateProgress(processed, total) {
+        const percent = Math.round((processed / total) * 100);
+        progressBar.style.width = `${percent}%`;
+    }
+
+    function showResult(processed, skipped, errors, flatten) {
+        let resultMessage = `
+            <div class="success-box">
+                <i class="fas fa-check-circle"></i>
+                <p><strong>¡Proceso completado con éxito!</strong></p>
+                <p>Archivos renombrados: ${processed}</p>
+                ${skipped > 0 ? `<p>Archivos no procesados: ${skipped}</p>` : ''}
+                <p>Estructura: ${flatten ? 'Todas las imágenes en una sola carpeta' : 'Manteniendo estructura original'}</p>
+                <p>Se ha descargado un archivo ZIP con los resultados.</p>
+        `;
+        
+        if (errors.length > 0) {
+            resultMessage += `
+                <div class="error-details">
+                    <p><strong>Errores encontrados (${errors.length}):</strong></p>
+                    <div class="error-list">
+                        ${errors.slice(0, 5).map(e => `<div>${e}</div>`).join('')}
+                        ${errors.length > 5 ? `<div>... y ${errors.length - 5} más</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        resultMessage += `</div>`;
+        resultDiv.innerHTML = resultMessage;
+    }
+
+    // Helper: Sanitizar nombres de archivo
+    function sanitizeFilename(filename) {
+        // Reemplazar caracteres problemáticos
+        return filename
+            .replace(/[/\\?%*:|"<>]/g, '_') // Caracteres prohibidos en Windows
+            .replace(/\s+/g, ' ');           // Múltiples espacios por uno solo
+    }
+
+    // Helper: Encontrar duplicados
+    function findDuplicates(arr) {
+        const seen = {};
+        const duplicates = [];
+        
+        arr.forEach(item => {
+            if (seen[item]) {
+                if (seen[item] === 1) {
+                    duplicates.push(item);
+                }
+                seen[item]++;
+            } else {
+                seen[item] = 1;
+            }
+        });
+        
+        return duplicates;
+    }
+</script>
+
+<script>
+    // Mostrar mensaje de éxito
+    function showSuccess(message) {
+        resultDiv.innerHTML = `
+            <div class="success-box">
+                <i class="fas fa-check-circle"></i>
+                ${message}
+            </div>
+        `;
+    }
+
+    // Mostrar mensaje de error
+    function showError(title, message) {
+        resultDiv.innerHTML = `
+            <div class="error-box">
+                <i class="fas fa-exclamation-circle"></i>
+                <strong>${title}:</strong> ${message}
+            </div>
+        `;
+    }
+
+    // Navegación entre pasos
+    function goToStep(stepNumber) {
+        steps.forEach((step, index) => {
+            step.classList.toggle('active', index === stepNumber - 1);
+        });
+        
+        // Scroll suave al paso actual
+        const activeStep = document.querySelector('.step.active');
+        if (activeStep) {
+            activeStep.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', () => {
+        // Configurar valores por defecto
+        prefixInput.value = 'img_';
+        startNumberInput.value = '1';
+        
+        // Actualizar vista previa cuando cambia la opción de aplanar
+        flattenStructureCheckbox.addEventListener('change', () => {
+            if (excelData.length > 0) {
+                showExcelPreview();
+            }
+        });
+    });
+</script>
+</body>
+</html>
